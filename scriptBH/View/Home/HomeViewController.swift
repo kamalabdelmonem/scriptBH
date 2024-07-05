@@ -142,7 +142,7 @@ extension HomeViewController: UITableViewDataSource, UITableViewDelegate {
     }
     func tableView(_ tableView: UITableView, willDisplay cell: UITableViewCell, forRowAt indexPath: IndexPath) {
         cell.alpha = 0
-        UIView.animate(withDuration: 0.3, delay: 0.03 * Double(indexPath.row), options: .curveEaseInOut, animations: {
+        UIView.animate(withDuration: 1, delay: 0.03 * Double(indexPath.row), options: .curveEaseInOut, animations: {
             cell.alpha = 1
         }, completion: nil)
     }
