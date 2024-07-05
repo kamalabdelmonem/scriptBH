@@ -9,15 +9,34 @@ import Foundation
 import Combine
 
 class CarouselViewModel {
-    fileprivate(set) var images: [ImageModel] = []
+    
+    // MARK: - Properties
+    private(set) var images: [ImageModel] = []
     private var currentIndexSubject = CurrentValueSubject<Int, Never>(0)
-
+    
     var currentIndexPublisher: AnyPublisher<Int, Never> {
         return currentIndexSubject.eraseToAnyPublisher()
     }
-
-    // Example function to fetch static images (default)
-    func fetchStaticImages() {
+    
+    // MARK: - Public Methods
+    func fetchImages(completion: @escaping (Result<Void, Error>) -> Void) {
+        fetchStaticImages()
+        
+        // Uncomment to fetch images from API
+        /*
+        fetchImagesFromAPI(completion: completion)
+        */
+        
+        // For now, fetch static images as a placeholder
+        completion(.success(()))
+    }
+    
+    func updateCurrentIndex(_ index: Int) {
+        currentIndexSubject.send(index)
+    }
+    
+    // MARK: - Private Methods
+    private func fetchStaticImages() {
         self.images = [
             ImageModel(id: "1", imageName: "image1"),
             ImageModel(id: "2", imageName: "image2"),
@@ -25,13 +44,9 @@ class CarouselViewModel {
             ImageModel(id: "4", imageName: "image4")
         ]
     }
-
-    // Function to fetch images from API
-    func fetchImages(completion: @escaping (Result<Void, Error>) -> Void) {
-        fetchStaticImages()
-
-        // Uncomment the following block to fetch images from API
-        /*
+    
+    /*
+    private func fetchImagesFromAPI(completion: @escaping (Result<Void, Error>) -> Void) {
         API.fetchData(from: "https://api.example.com/images") { [weak self] (result: Result<[ImageModel], Error>) in
             guard let self = self else { return }
             switch result {
@@ -43,13 +58,6 @@ class CarouselViewModel {
                 completion(.failure(error))
             }
         }
-        */
-        
-        // For now, fetch static images as a placeholder
-        completion(.success(()))
     }
-
-    func updateCurrentIndex(_ index: Int) {
-        currentIndexSubject.send(index)
-    }
+    */
 }

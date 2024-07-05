@@ -7,25 +7,40 @@
 
 import Foundation
 
+// MARK: - API Service
 struct API {
+    
+    // MARK: - Fetch Data Method
     static func fetchData<T: Decodable>(from endpoint: String, completion: @escaping (Result<[T], Error>) -> Void) {
-        let url = URL(string: endpoint)!
+        guard let url = URL(string: endpoint) else {
+            completion(.failure(NetworkError.invalidURL))
+            return
+        }
+        
         URLSession.shared.dataTask(with: url) { data, response, error in
             if let error = error {
-                completion(.failure(error))
+                DispatchQueue.main.async {
+                    completion(.failure(error))
+                }
                 return
             }
             
             guard let data = data else {
-                completion(.failure(NSError(domain: "com.example.app", code: -1, userInfo: nil)))
+                DispatchQueue.main.async {
+                    completion(.failure(NetworkError.requestFailed))
+                }
                 return
             }
             
             do {
                 let decodedData = try JSONDecoder().decode([T].self, from: data)
-                completion(.success(decodedData))
+                DispatchQueue.main.async {
+                    completion(.success(decodedData))
+                }
             } catch {
-                completion(.failure(error))
+                DispatchQueue.main.async {
+                    completion(.failure(error))
+                }
             }
         }.resume()
     }

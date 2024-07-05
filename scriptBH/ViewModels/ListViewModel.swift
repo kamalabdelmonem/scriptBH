@@ -9,11 +9,13 @@ import Foundation
 import Combine
 
 class ListViewModel {
-    private var dynamicContent: [Int: [ListItemModel]] = [
+    
+    // MARK: - Properties
+    internal var dynamicContent: [Int: [ListItemModel]] = [
         0: (1...20).map { ListItemModel(id: "\($0)", label: "List 0 - Item \($0)") },
         1: (1...40).map { ListItemModel(id: "\($0)", label: "List 1 - Item \($0)") },
-        2: (1...4).map { ListItemModel(id: "\($0)", label: "List 2 - Item \($0)") },
-        3: (1...22).map { ListItemModel(id: "\($0)", label: "List 3 - Item \($0)") }
+        2: (1...14).map { ListItemModel(id: "\($0)", label: "List 2 - Item \($0)") },
+        3: (1...32).map { ListItemModel(id: "\($0)", label: "List 3 - Item \($0)") }
         // Add more indexes and items as needed
     ]
     private var filteredItemsSubject = CurrentValueSubject<[ListItemModel], Never>([])
@@ -23,17 +25,43 @@ class ListViewModel {
         return filteredItemsSubject.eraseToAnyPublisher()
     }
     
+    // MARK: - Public Methods
+    // Expose for testing
+    func getDynamicContent() -> [Int: [ListItemModel]] {
+        return dynamicContent
+    }
+
+
     func fetchItems(forIndex index: Int) {
-        // Use dynamicContent for static data (default)
-        guard let items = dynamicContent[index] else {
-            self.filteredItemsSubject.send([])
-            return
-        }
-        self.currentCarouselIndex = index
-        self.filteredItemsSubject.send(items)
+        fetchStaticContent(forIndex: index)
         
         // Uncomment to fetch items from API
         /*
+        fetchItemsFromAPI(forIndex: index)
+        */
+    }
+    
+    func filterItems(with query: String) {
+        guard let currentItems = dynamicContent[currentCarouselIndex] else {
+            filteredItemsSubject.send([])
+            return
+        }
+        let filtered = query.isEmpty ? currentItems : currentItems.filter { $0.label.lowercased().contains(query.lowercased()) }
+        filteredItemsSubject.send(filtered)
+    }
+    
+    // MARK: - Private Methods
+    private func fetchStaticContent(forIndex index: Int) {
+        guard let items = dynamicContent[index] else {
+            filteredItemsSubject.send([])
+            return
+        }
+        currentCarouselIndex = index
+        filteredItemsSubject.send(items)
+    }
+    
+    /*
+    private func fetchItemsFromAPI(forIndex index: Int) {
         API.fetchList(forIndex: index) { [weak self] (result: Result<[ListItemModel], Error>) in
             guard let self = self else { return }
             switch result {
@@ -46,19 +74,6 @@ class ListViewModel {
                 self.filteredItemsSubject.send([])
             }
         }
-        */
     }
-    
-    func filterItems(with query: String) {
-        guard let currentItems = dynamicContent[currentCarouselIndex] else {
-            filteredItemsSubject.send([])
-            return
-        }
-        if query.isEmpty {
-            filteredItemsSubject.send(currentItems)
-        } else {
-            let filtered = currentItems.filter { $0.label.lowercased().contains(query.lowercased()) }
-            filteredItemsSubject.send(filtered)
-        }
-    }
+    */
 }

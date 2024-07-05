@@ -10,79 +10,112 @@ import Combine
 
 class HomeViewController: UIViewController {
     
+    // MARK: - Outlets
     @IBOutlet weak var carouselCollectionView: UICollectionView!
     @IBOutlet weak var pageControl: UIPageControl!
     @IBOutlet weak var searchBar: UISearchBar!
     @IBOutlet weak var tableView: UITableView!
     @IBOutlet weak var scrollView: UIScrollView!
     @IBOutlet weak var tableViewHeightConstraint: NSLayoutConstraint!
-
-    private var carouselViewModel = CarouselViewModel()
-    private var listViewModel = ListViewModel()
     
+    // MARK: - Properties
+    var carouselViewModel = CarouselViewModel()
+    var listViewModel = ListViewModel()
+    var filteredItems: [ListItemModel] = []
     private var cancellables = Set<AnyCancellable>()
-    
-    private var filteredItems: [ListItemModel] = [] // Store filtered items locally
     private var listItemHeight = 48
+    
+    // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
         bindViewModels()
     }
     
+    // MARK: - Setup UI
     private func setupUI() {
         view.backgroundColor = .white
-        
-        // Setup Carousel CollectionView
+        setupScrollView()
+        setupCarouselCollectionView()
+        setupPageControl()
+        setupSearchBar()
+        setupTableView()
+    }
+    
+    private func setupScrollView() {
+        scrollView.delegate = self
+    }
+    
+    private func setupCarouselCollectionView() {
         carouselCollectionView.dataSource = self
         carouselCollectionView.delegate = self
         carouselCollectionView.register(CarouselCollectionViewCell.self, forCellWithReuseIdentifier: CarouselCollectionViewCell.identifier)
-        carouselCollectionView.translatesAutoresizingMaskIntoConstraints = false
-
-        // Setup Page Control
+    }
+    
+    private func setupPageControl() {
         pageControl.currentPage = 0
-        
-        // Setup Search Bar
+    }
+    
+    private func setupSearchBar() {
         searchBar.delegate = self
         searchBar.placeholder = NSLocalizedString("Search", comment: "Search placeholder")
-        searchBar.translatesAutoresizingMaskIntoConstraints = false
-
-        // Setup TableView
+    }
+    
+    private func setupTableView() {
         tableView.dataSource = self
         tableView.delegate = self
         tableView.register(ListTableViewCell.self, forCellReuseIdentifier: ListTableViewCell.identifier)
-        tableView.translatesAutoresizingMaskIntoConstraints = false
+        tableView.contentInset = .zero
     }
     
+    // MARK: - Bind ViewModels
     private func bindViewModels() {
+        bindCarouselViewModel()
+        bindListViewModel()
+    }
+    
+    private func bindCarouselViewModel() {
         carouselViewModel.fetchImages { [weak self] result in
             guard let self = self else { return }
             DispatchQueue.main.async {
-                switch result {
-                case .success:
-                    self.carouselCollectionView.reloadData()
-                    self.pageControl.numberOfPages = self.carouselViewModel.images.count
-                    if !self.carouselViewModel.images.isEmpty {
-                        let firstIndexPath = IndexPath(item: 0, section: 0)
-                        self.carouselCollectionView.selectItem(at: firstIndexPath, animated: false, scrollPosition: .left)
-                        self.collectionView(self.carouselCollectionView, didSelectItemAt: firstIndexPath)
-                    }
-                case .failure(let error):
-                    print("Failed to fetch images: \(error.localizedDescription)")
-                }
+                self.handleFetchImagesResult(result)
             }
         }
-        
-        // Subscribe to updates in filteredItemsPublisher
+    }
+    
+    private func handleFetchImagesResult(_ result: Result<Void, Error>) {
+        switch result {
+        case .success:
+            carouselCollectionView.reloadData()
+            pageControl.numberOfPages = carouselViewModel.images.count
+            selectInitialCarouselItemIfNeeded()
+        case .failure(let error):
+            print("Failed to fetch images: \(error.localizedDescription)")
+        }
+    }
+    
+    private func selectInitialCarouselItemIfNeeded() {
+        if !carouselViewModel.images.isEmpty {
+            let firstIndexPath = IndexPath(item: 0, section: 0)
+            carouselCollectionView.selectItem(at: firstIndexPath, animated: false, scrollPosition: .left)
+            collectionView(carouselCollectionView, didSelectItemAt: firstIndexPath)
+        }
+    }
+    
+    private func bindListViewModel() {
         listViewModel.filteredItemsPublisher
             .sink { [weak self] filteredItems in
-                self?.filteredItems = filteredItems // Store filtered items locally
-                DispatchQueue.main.async {
-                    self?.tableViewHeightConstraint.constant = CGFloat(filteredItems.count * (self?.listItemHeight ?? 0))
-                    self?.tableView.reloadData() // Reload tableView with the latest filtered items
-                }
+                self?.filteredItems = filteredItems
+                self?.updateTableViewHeightAndReload()
             }
             .store(in: &cancellables)
+    }
+    
+    private func updateTableViewHeightAndReload() {
+        DispatchQueue.main.async {
+            self.tableViewHeightConstraint.constant = CGFloat(self.filteredItems.count * self.listItemHeight)
+            self.tableView.reloadData()
+        }
     }
 }
 
@@ -104,13 +137,16 @@ extension HomeViewController: UICollectionViewDataSource, UICollectionViewDelega
     }
     
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        // Update currentCarouselIndex and fetch items for the new index
         listViewModel.fetchItems(forIndex: indexPath.item)
     }
     
     func collectionView(_ collectionView: UICollectionView, willDisplay cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+        animateCellAppearance(cell, at: indexPath)
+    }
+    
+    private func animateCellAppearance(_ cell: UICollectionViewCell, at indexPath: IndexPath) {
         cell.alpha = 0
-        UIView.animate(withDuration: 0.5, delay: 0.04 * Double(indexPath.item), options: .curveEaseInOut, animations: {
+        UIView.animate(withDuration: 0.5, delay: 0.02 * Double(indexPath.item), options: .curveEaseInOut, animations: {
             cell.alpha = 1
         }, completion: nil)
     }
@@ -140,35 +176,64 @@ extension HomeViewController: UITableViewDataSource, UITableViewDelegate {
         cell.selectionStyle = .none
         return cell
     }
+    
     func tableView(_ tableView: UITableView, willDisplay cell: UITableViewCell, forRowAt indexPath: IndexPath) {
+        animateCellAppearance(cell, at: indexPath)
+    }
+    
+    private func animateCellAppearance(_ cell: UITableViewCell, at indexPath: IndexPath) {
         cell.alpha = 0
-        UIView.animate(withDuration: 1, delay: 0.03 * Double(indexPath.row), options: .curveEaseInOut, animations: {
+        UIView.animate(withDuration: 0.1, delay: 0 * Double(indexPath.row), options: .curveEaseInOut, animations: {
             cell.alpha = 1
         }, completion: nil)
     }
+    
     func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
-        return CGFloat(self.listItemHeight)
+        return CGFloat(listItemHeight)
     }
-
 }
 
+// MARK: - UIScrollView Delegate
 extension HomeViewController: UIScrollViewDelegate {
     func scrollViewDidScroll(_ scrollView: UIScrollView) {
         if scrollView == carouselCollectionView {
-            // Calculate the current page based on the scroll position
-            let width = scrollView.frame.width
-            let currentPage = Int((scrollView.contentOffset.x + width / 2) / width)
-            
-            // Check if the current page has changed from the last known page
-            if currentPage != pageControl.currentPage {
-                pageControl.currentPage = currentPage
-                listViewModel.fetchItems(forIndex: currentPage)
-                searchBar.text = ""
-                DispatchQueue.main.async {
-                    self.tableView.reloadData()
-                    self.updateCurrentIndexAfterScroll()
-                }
+            handleCarouselScroll(scrollView)
+        } else if scrollView == self.scrollView {
+            handleMainScroll(scrollView)
+        } else if scrollView == tableView {
+            handleTableViewScroll(scrollView)
+        }
+    }
+    
+    private func handleCarouselScroll(_ scrollView: UIScrollView) {
+        let width = scrollView.frame.width
+        let currentPage = Int((scrollView.contentOffset.x + width / 2) / width)
+        
+        if currentPage != pageControl.currentPage {
+            pageControl.currentPage = currentPage
+            listViewModel.fetchItems(forIndex: currentPage)
+            searchBar.text = ""
+            DispatchQueue.main.async {
+                self.tableView.reloadData()
+                self.updateCurrentIndexAfterScroll()
             }
+        }
+    }
+    
+    private func handleMainScroll(_ scrollView: UIScrollView) {
+        if scrollView.contentOffset.y >= 230 {
+            tableViewHeightConstraint.constant = scrollView.bounds.height - 50 // 50 is the search bar height
+            scrollView.setContentOffset(CGPoint(x: 0, y: 230), animated: false)
+        } else {
+            tableViewHeightConstraint.constant = CGFloat(filteredItems.count * listItemHeight)
+        }
+    }
+    
+    private func handleTableViewScroll(_ scrollView: UIScrollView) {
+        if scrollView.contentOffset.y <= 0 {
+            scrollView.setContentOffset(CGPoint(x: 0, y: tableView.bounds.minX), animated: false)
+            self.scrollView.setContentOffset(CGPoint(x: 0, y: 0), animated: true)
+            tableViewHeightConstraint.constant = CGFloat(filteredItems.count * listItemHeight)
         }
     }
     

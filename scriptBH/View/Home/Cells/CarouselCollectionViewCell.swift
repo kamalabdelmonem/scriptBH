@@ -8,14 +8,32 @@
 import UIKit
 
 class CarouselCollectionViewCell: UICollectionViewCell {
+    
+    // MARK: - Properties
     static let identifier = "CarouselCollectionViewCell"
     
-    let imageView = UIImageView()
+    private let imageView: UIImageView = {
+        let imageView = UIImageView()
+        imageView.translatesAutoresizingMaskIntoConstraints = false
+        imageView.contentMode = .scaleAspectFill
+        imageView.clipsToBounds = true
+        return imageView
+    }()
     
+    // MARK: - Initializers
     override init(frame: CGRect) {
         super.init(frame: frame)
+        setupViews()
+    }
+    
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        setupViews()
+    }
+    
+    // MARK: - Setup Methods
+    private func setupViews() {
         contentView.addSubview(imageView)
-        imageView.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
             imageView.topAnchor.constraint(equalTo: contentView.topAnchor),
             imageView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
@@ -24,13 +42,8 @@ class CarouselCollectionViewCell: UICollectionViewCell {
         ])
     }
     
-    required init?(coder: NSCoder) {
-        super.init(coder: coder)
-        // Additional initialization if needed
-    }
-    
+    // MARK: - Configuration Method
     func configure(with imageName: String) {
-        // Fetch image from local assets
         imageView.image = UIImage(named: imageName)
     }
 }

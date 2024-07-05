@@ -8,29 +8,54 @@
 import UIKit
 
 class ListTableViewCell: UITableViewCell {
+    
+    // MARK: - Properties
     static let identifier = "ListTableViewCell"
     
-    let iconImageView = UIImageView()
-    let label = UILabel()
+    private let iconImageView: UIImageView = {
+        let imageView = UIImageView()
+        imageView.contentMode = .scaleAspectFit
+        imageView.translatesAutoresizingMaskIntoConstraints = false
+        imageView.image = UIImage(named: "box")
+        return imageView
+    }()
     
+    private let label: UILabel = {
+        let label = UILabel()
+        label.translatesAutoresizingMaskIntoConstraints = false
+        return label
+    }()
+    
+    // MARK: - Initializers
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
-        
-        // Configure icon image view
-        iconImageView.contentMode = .scaleAspectFit
+        setupViews()
+    }
+    
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        setupViews()
+    }
+    
+    // MARK: - Setup Methods
+    private func setupViews() {
+        setupIconImageView()
+        setupLabel()
+        self.selectionStyle = .none
+    }
+    
+    private func setupIconImageView() {
         contentView.addSubview(iconImageView)
-        iconImageView.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
             iconImageView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
             iconImageView.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
-            iconImageView.widthAnchor.constraint(equalToConstant: 24), // Adjust size as needed
-            iconImageView.heightAnchor.constraint(equalToConstant: 24) // Adjust size as needed
+            iconImageView.widthAnchor.constraint(equalToConstant: 24),
+            iconImageView.heightAnchor.constraint(equalToConstant: 24)
         ])
-        iconImageView.image = UIImage(named: "box")
-        
-        // Configure label
+    }
+    
+    private func setupLabel() {
         contentView.addSubview(label)
-        label.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
             label.leadingAnchor.constraint(equalTo: iconImageView.trailingAnchor, constant: 16),
             label.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
@@ -38,14 +63,8 @@ class ListTableViewCell: UITableViewCell {
         ])
     }
     
-    required init?(coder: NSCoder) {
-        super.init(coder: coder)
-        // Additional initialization if needed
-    }
-    
-    func configure(with: String) {
-        label.text = with
-        self.selectionStyle = .none
+    // MARK: - Configuration Method
+    func configure(with text: String) {
+        label.text = text
     }
 }
-
