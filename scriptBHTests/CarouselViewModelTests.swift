@@ -31,8 +31,6 @@ class CarouselViewModelTests: XCTestCase {
     // MARK: - Test Cases
     
     func testFetchStaticImages() {
-        // Given
-        
         // When
         viewModel.fetchImages { result in
             // Then

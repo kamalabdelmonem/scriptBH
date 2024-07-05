@@ -19,9 +19,9 @@ class HomeViewController: UIViewController {
     @IBOutlet weak var tableViewHeightConstraint: NSLayoutConstraint!
     
     // MARK: - Properties
-    var carouselViewModel = CarouselViewModel()
-    var listViewModel = ListViewModel()
-    var filteredItems: [ListItemModel] = []
+    private var carouselViewModel = CarouselViewModel()
+    private var listViewModel = ListViewModel()
+    private var filteredItems: [ListItemModel] = []
     private var cancellables = Set<AnyCancellable>()
     private var listItemHeight = 48
     
