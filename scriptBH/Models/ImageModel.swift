@@ -9,6 +9,6 @@ import Foundation
 
 struct ImageModel: Codable {
     let id: String
-    let imageName: String  // Local image name
+    let imageName: String  // static local image name
 }
 

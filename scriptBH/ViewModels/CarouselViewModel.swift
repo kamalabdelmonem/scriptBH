@@ -8,9 +8,13 @@
 import Foundation
 import Combine
 
+import Foundation
+import Combine
+
 class CarouselViewModel {
     
     // MARK: - Properties
+    
     private(set) var images: [ImageModel] = []
     private var currentIndexSubject = CurrentValueSubject<Int, Never>(0)
     
@@ -19,23 +23,31 @@ class CarouselViewModel {
     }
     
     // MARK: - Public Methods
+    
+    /// Fetching images  // currently from static data.
+    ///
+    /// - Parameter completion: Completion block called after fetching completes.
     func fetchImages(completion: @escaping (Result<Void, Error>) -> Void) {
-        fetchStaticImages()
+        fetchStaticImages() // Fetch static images
         
         // Uncomment to fetch images from API
         /*
         fetchImagesFromAPI(completion: completion)
         */
         
-        // For now, fetch static images as a placeholder
         completion(.success(()))
     }
     
+    /// Updates the current index of the carousel.
+    ///
+    /// - Parameter index: The new index to set.
     func updateCurrentIndex(_ index: Int) {
         currentIndexSubject.send(index)
     }
     
     // MARK: - Private Methods
+    
+    /// Fetches static images.
     private func fetchStaticImages() {
         self.images = [
             ImageModel(id: "1", imageName: "image1"),
@@ -46,9 +58,13 @@ class CarouselViewModel {
     }
     
     /*
+    /// Fetches images from a remote API endpoint.
+    ///
+    /// - Parameter completion: Completion block called after fetching completes.
     private func fetchImagesFromAPI(completion: @escaping (Result<Void, Error>) -> Void) {
         API.fetchData(from: "https://api.example.com/images") { [weak self] (result: Result<[ImageModel], Error>) in
             guard let self = self else { return }
+            
             switch result {
             case .success(let images):
                 self.images = images

@@ -96,7 +96,7 @@ class HomeViewController: UIViewController {
     
     private func handleFetchError(_ error: Error) {
         print("Failed to fetch images: \(error.localizedDescription)")
-        // Optionally show an alert to the user
+        // showing an alert to the user
         let alertController = UIAlertController(
             title: NSLocalizedString("Error", comment: ""),
             message: NSLocalizedString("Failed to load images.", comment: ""),
@@ -210,16 +210,11 @@ extension HomeViewController: UICollectionViewDataSource, UICollectionViewDelega
 // MARK: - UISearchBar Delegate
 extension HomeViewController: UISearchBarDelegate {
     func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
-        let sanitizedText = sanitize(searchText)
-        listViewModel.filterItems(with: sanitizedText)
+        listViewModel.filterItems(with: searchText)
     }
 
     func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
         searchBar.resignFirstResponder()
-    }
-    
-    private func sanitize(_ text: String) -> String {
-        return text.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 }
 
@@ -243,12 +238,6 @@ extension HomeViewController: UITableViewDataSource, UITableViewDelegate {
     
     func tableView(_ tableView: UITableView, willDisplay cell: UITableViewCell, forRowAt indexPath: IndexPath) {
         animateCellAppearance(cell, at: indexPath)
-    }
-    
-    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        let selectedItem = filteredItems[indexPath.row]
-        print("Selected item: \(selectedItem.label)")
-        // Perform any additional actions here, e.g., navigation, detail view presentation
     }
     
     private func animateCellAppearance(_ cell: UITableViewCell, at indexPath: IndexPath) {
