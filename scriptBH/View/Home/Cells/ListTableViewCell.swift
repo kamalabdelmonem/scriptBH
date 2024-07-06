@@ -2,7 +2,7 @@
 //  ListTableViewCell.swift
 //  scriptBH
 //
-//  Created by Work on 04/07/2024.
+//  Created by Work on 07/07/2024.
 //
 
 import UIKit
@@ -12,16 +12,20 @@ class ListTableViewCell: UITableViewCell {
     // MARK: - Properties
     static let identifier = "ListTableViewCell"
     
-    private let iconImageView: UIImageView = {
-        let imageView = UIImageView()
-        imageView.contentMode = .scaleAspectFit
-        imageView.translatesAutoresizingMaskIntoConstraints = false
-        imageView.image = UIImage(named: "box")
-        return imageView
+    // Views
+    private let mainView: UIView = {
+        let view = UIView()
+        view.translatesAutoresizingMaskIntoConstraints = false
+        view.layer.cornerRadius = 8
+        view.layer.borderWidth = 0.5
+        view.layer.borderColor = UIColor.gray.cgColor
+        return view
     }()
     
-    private let label: UILabel = {
+    private let cellTitle: UILabel = {
         let label = UILabel()
+        label.textColor = UIColor(named: "Main")
+        label.font = .systemFont(ofSize: 16, weight: .semibold)
         label.translatesAutoresizingMaskIntoConstraints = false
         return label
     }()
@@ -39,32 +43,29 @@ class ListTableViewCell: UITableViewCell {
     
     // MARK: - Setup Methods
     private func setupViews() {
-        setupIconImageView()
-        setupLabel()
         self.selectionStyle = .none
-    }
-    
-    private func setupIconImageView() {
-        contentView.addSubview(iconImageView)
+        
+        // Add subviews
+        contentView.addSubview(mainView)
+        mainView.addSubview(cellTitle)
+        
+        // Setup constraints
         NSLayoutConstraint.activate([
-            iconImageView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
-            iconImageView.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
-            iconImageView.widthAnchor.constraint(equalToConstant: 24),
-            iconImageView.heightAnchor.constraint(equalToConstant: 24)
-        ])
-    }
-    
-    private func setupLabel() {
-        contentView.addSubview(label)
-        NSLayoutConstraint.activate([
-            label.leadingAnchor.constraint(equalTo: iconImageView.trailingAnchor, constant: 16),
-            label.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
-            label.centerYAnchor.constraint(equalTo: contentView.centerYAnchor)
+            // MainView constraints
+            mainView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 8),
+            mainView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 8),
+            mainView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -8),
+            mainView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -8),
+            
+            // CellTitle constraints
+            cellTitle.centerYAnchor.constraint(equalTo: mainView.centerYAnchor),
+            cellTitle.leadingAnchor.constraint(equalTo: mainView.leadingAnchor, constant: 16),
+            cellTitle.trailingAnchor.constraint(equalTo: mainView.trailingAnchor, constant: -16)
         ])
     }
     
     // MARK: - Configuration Method
     func configure(with text: String) {
-        label.text = text
+        cellTitle.text = text
     }
 }

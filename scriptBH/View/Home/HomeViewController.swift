@@ -23,7 +23,7 @@ class HomeViewController: UIViewController {
     private var listViewModel = ListViewModel()
     private var filteredItems: [ListItemModel] = []
     private var cancellables = Set<AnyCancellable>()
-    private var listItemHeight = 48
+    private var listItemHeight = 60
     
     // MARK: - Lifecycle
     override func viewDidLoad() {

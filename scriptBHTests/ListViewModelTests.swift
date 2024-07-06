@@ -25,6 +25,7 @@ class ListViewModelTests: XCTestCase {
     
     override func tearDown() {
         viewModel = nil
+        cancellables.removeAll()
         super.tearDown()
     }
     
@@ -33,20 +34,28 @@ class ListViewModelTests: XCTestCase {
     func testFetchItemsForIndex() {
         // Given
         let indexToFetch = 0
+        let expectedItemCount = 20
+        let expectation = self.expectation(description: "Fetch items for index")
         
         // When
         viewModel.fetchItems(forIndex: indexToFetch)
         
         // Then
-        let dynamicContent = viewModel.getDynamicContent()
-        XCTAssertNotNil(dynamicContent)
-        XCTAssertEqual(dynamicContent[indexToFetch]?.count, 20, "Expected 20 items in dynamic content for index \(indexToFetch)")
+        viewModel.filteredItemsPublisher
+            .sink { items in
+                XCTAssertEqual(items.count, expectedItemCount, "Expected \(expectedItemCount) items for index \(indexToFetch)")
+                expectation.fulfill()
+            }
+            .store(in: &cancellables)
+        
+        waitForExpectations(timeout: 1, handler: nil)
     }
     
     func testFilterItemsWithQuery() {
         // Given
         let indexToFetch = 0
         let filterQuery = "Item 10"
+        let expectation = self.expectation(description: "Filter items with query")
         
         // When
         viewModel.fetchItems(forIndex: indexToFetch)
@@ -56,8 +65,11 @@ class ListViewModelTests: XCTestCase {
         viewModel.filteredItemsPublisher
             .sink { filteredItems in
                 XCTAssertEqual(filteredItems.count, 1, "Expected 1 item in filtered list")
-                XCTAssertEqual(filteredItems[0].label, "List \(indexToFetch) - \(filterQuery)", "Expected item label to match")
+                XCTAssertEqual(filteredItems.first?.label, "List \(indexToFetch) - \(filterQuery)", "Expected item label to match")
+                expectation.fulfill()
             }
             .store(in: &cancellables)
+        
+        waitForExpectations(timeout: 1, handler: nil)
     }
 }
