@@ -90,8 +90,20 @@ class HomeViewController: UIViewController {
             pageControl.numberOfPages = carouselViewModel.images.count
             selectInitialCarouselItemIfNeeded()
         case .failure(let error):
-            print("Failed to fetch images: \(error.localizedDescription)")
+            handleFetchError(error)
         }
+    }
+    
+    private func handleFetchError(_ error: Error) {
+        print("Failed to fetch images: \(error.localizedDescription)")
+        // Optionally show an alert to the user
+        let alertController = UIAlertController(
+            title: NSLocalizedString("Error", comment: ""),
+            message: NSLocalizedString("Failed to load images.", comment: ""),
+            preferredStyle: .alert
+        )
+        alertController.addAction(UIAlertAction(title: NSLocalizedString("OK", comment: ""), style: .default))
+        present(alertController, animated: true)
     }
     
     private func selectInitialCarouselItemIfNeeded() {
@@ -121,6 +133,7 @@ class HomeViewController: UIViewController {
 
 // MARK: - UICollectionView DataSource & Delegate
 extension HomeViewController: UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
+    
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         return carouselViewModel.images.count
     }
@@ -129,14 +142,16 @@ extension HomeViewController: UICollectionViewDataSource, UICollectionViewDelega
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: CarouselCollectionViewCell.identifier, for: indexPath) as! CarouselCollectionViewCell
         let image = carouselViewModel.images[indexPath.item]
         cell.configure(with: image.imageName)
+        configureCellAppearance(cell)
         return cell
     }
     
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
-        return CGSize(width: collectionView.frame.width, height: collectionView.frame.height)
+        return collectionView.bounds.size
     }
     
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+        collectionView.scrollToItem(at: indexPath, at: .centeredHorizontally, animated: true)
         listViewModel.fetchItems(forIndex: indexPath.item)
     }
     
@@ -144,27 +159,73 @@ extension HomeViewController: UICollectionViewDataSource, UICollectionViewDelega
         animateCellAppearance(cell, at: indexPath)
     }
     
+    // MARK: - UIScrollViewDelegate (for paging and centering)
+    func scrollViewWillEndDragging(_ scrollView: UIScrollView, withVelocity velocity: CGPoint, targetContentOffset: UnsafeMutablePointer<CGPoint>) {
+        guard let collectionView = scrollView as? UICollectionView else { return }
+        
+        let pageWidth = collectionView.bounds.width
+        let targetXContentOffset = targetContentOffset.pointee.x
+        let numberOfItems = collectionView.numberOfItems(inSection: 0)
+        
+        var newPage = targetXContentOffset / pageWidth
+        
+        if velocity.x == 0 {
+            newPage = round(targetXContentOffset / pageWidth)
+        } else {
+            newPage = velocity.x > 0 ? ceil(targetXContentOffset / pageWidth) : floor(targetXContentOffset / pageWidth)
+        }
+        
+        if newPage < 0 {
+            newPage = 0
+        } else if newPage >= CGFloat(numberOfItems) {
+            newPage = CGFloat(numberOfItems - 1)
+        }
+        
+        targetContentOffset.pointee = CGPoint(x: newPage * pageWidth, y: 0)
+    }
+    
+    // MARK: - Private Methods
+    
+    private func configureCellAppearance(_ cell: UICollectionViewCell) {
+        cell.contentView.layer.cornerRadius = 12
+        cell.contentView.layer.masksToBounds = true
+        cell.layer.shadowColor = UIColor.black.cgColor
+        cell.layer.shadowOffset = CGSize(width: 0, height: 2)
+        cell.layer.shadowRadius = 2
+        cell.layer.shadowOpacity = 0.3
+    }
+    
     private func animateCellAppearance(_ cell: UICollectionViewCell, at indexPath: IndexPath) {
         cell.alpha = 0
-        UIView.animate(withDuration: 0.5, delay: 0.02 * Double(indexPath.item), options: .curveEaseInOut, animations: {
+        UIView.animate(withDuration: 0.5, delay: 0.05 * Double(indexPath.item), options: .curveEaseInOut, animations: {
             cell.alpha = 1
+            cell.transform = CGAffineTransform(scaleX: 0.9, y: 0.9)
         }, completion: nil)
     }
 }
 
+
+
+
 // MARK: - UISearchBar Delegate
 extension HomeViewController: UISearchBarDelegate {
     func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
-        listViewModel.filterItems(with: searchText)
+        let sanitizedText = sanitize(searchText)
+        listViewModel.filterItems(with: sanitizedText)
     }
-    
+
     func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
         searchBar.resignFirstResponder()
+    }
+    
+    private func sanitize(_ text: String) -> String {
+        return text.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 }
 
 // MARK: - UITableView DataSource & Delegate
 extension HomeViewController: UITableViewDataSource, UITableViewDelegate {
+    
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return filteredItems.count
     }
@@ -173,25 +234,32 @@ extension HomeViewController: UITableViewDataSource, UITableViewDelegate {
         let cell = tableView.dequeueReusableCell(withIdentifier: ListTableViewCell.identifier, for: indexPath) as! ListTableViewCell
         let item = filteredItems[indexPath.row]
         cell.configure(with: item.label)
-        cell.selectionStyle = .none
         return cell
+    }
+    
+    func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
+        return CGFloat(listItemHeight)
     }
     
     func tableView(_ tableView: UITableView, willDisplay cell: UITableViewCell, forRowAt indexPath: IndexPath) {
         animateCellAppearance(cell, at: indexPath)
     }
     
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        let selectedItem = filteredItems[indexPath.row]
+        print("Selected item: \(selectedItem.label)")
+        // Perform any additional actions here, e.g., navigation, detail view presentation
+    }
+    
     private func animateCellAppearance(_ cell: UITableViewCell, at indexPath: IndexPath) {
         cell.alpha = 0
-        UIView.animate(withDuration: 0.1, delay: 0 * Double(indexPath.row), options: .curveEaseInOut, animations: {
+        
+        UIView.animate(withDuration: 0.3, delay: 0 * Double(indexPath.row), options: .curveEaseInOut, animations: {
             cell.alpha = 1
         }, completion: nil)
     }
-    
-    func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
-        return CGFloat(listItemHeight)
-    }
 }
+
 
 // MARK: - UIScrollView Delegate
 extension HomeViewController: UIScrollViewDelegate {
